@@ -3,8 +3,8 @@ import numpy as np
 import sys
 import tensorflow as tf
 from os.path import join
-from Densenet4htr import Densenet4htr
-import utils
+from recognition.Densenet4htr import Densenet4htr
+import recognition.utils
 
 class DecoderType:
   BestPath = 0
@@ -28,9 +28,11 @@ class Model:
     self.batchsize = args.batchsize
     self.lrInit = args.lrInit
     self.args = args
+    #self.experiment=experiment
 
 
     # Input
+    tf.reset_default_graph()
     self.inputImgs = tf.placeholder(tf.float32, shape=(None, args.imgsize[0], args.imgsize[1]))#self.batchsize yike
     # CNN
     if args.nondensenet:
