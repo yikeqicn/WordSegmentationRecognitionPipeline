@@ -33,7 +33,8 @@ import socket
 from glob import glob
 from itertools import islice, chain # a batch iterator
 home = os.environ['HOME']
-
+import time
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1' #yike: notice commnet it out if you wanna use gpu and you have one available
 '''
 python main.py -train -batchsize=50 -rnnsteps=32 -noartifact -beamsearch -name=dense_128_32_noartifact_beamsearch_prt 
 # change the name to link to different model
@@ -115,17 +116,20 @@ def segmentation_wraper(img_path): # yike: should revise a little if the input i
 
 def main():
   #print(args)
-  
+  t_start=time.time()
   '''
   dumy loading data: detected line data, please revise this part according to real detected data
   this part might need rewriting upon real detected result data
   '''
   
-  imgFiles=glob('/root/datasets/img_print_100000_en/**.jpg')
+  #imgFiles=glob('/root/datasets/img_print_100000_en/**.jpg')
+  imgFiles=glob('/root/demo/Berkman_Inv_f6tC9Oj_CROPS/**.jpg')
+  print(imgFiles)
+  #imgFiles=imgFiles[:1]
   boundingbox_lst=  [None for i in range(len(imgFiles))]# dumy data, boundingbox info, from detection result, would be used to aggregate recognized 
   
   detect_rlt=zip(imgFiles,boundingbox_lst)
-  
+
   # dummy data construct complete org_imgs, bd_boxes
   
   '''
@@ -141,12 +145,22 @@ def main():
   '''
   Segmentation & Recognition, using dummy model
   '''
-
-  
+  #print(args.bounding_box_batch_size)
+  #for batch in batchnize(iterable=[0],size=1):
+  #  print(list(batch))
+#  print(len(list(detect_rlt)))
+  #print(args.bounding_box_batch_size)
   ct=0
   rlt_all=[]
+  
+  t_model_preped=time.time()
+  print('model prepare time: ' + str(t_model_preped-t_start))
+  
   for batch in batchnize(iterable=detect_rlt,size=args.bounding_box_batch_size):
+    t_last_batch=time.time()     
+   # print(batch)
     org_img_paths,bd_boxes=zip(*list(batch))
+   # print(org_img_paths)
     ct=ct+1
     line_image_lists= list(map(segmentation_wraper,org_img_paths)) # assume segmentation works, risky
     line_cum_lens=list(np.cumsum(list(map(lambda l: len(l),line_image_lists))))
@@ -156,9 +170,12 @@ def main():
     #print(line_cum_lens)
     merged=list(chain.from_iterable(line_image_lists))
     recognized = model.inferBatch(merged)
+    #print(recognized)
+    #print(bt_size)
     
     for idx in range(bt_size):
       rlt_text_line=' '.join(recognized[line_cum_lens[idx]:line_cum_lens[idx+1]])
+      #print(rlt_text_line)
       gt_text_line= str(basename(org_img_paths[idx])[:-4])
       rlt_all.append((rlt_text_line,gt_text_line,bd_boxes[idx]))
     #if ct==8:
@@ -175,18 +192,26 @@ def main():
       #print(org_img_paths)
       #print(recognized)
       #print(line_cum_lens)
-      
-    if ct>10:
+    
+    t_batch_finished=time.time()
+    print(str((ct-1)*args.bounding_box_batch_size)+' lines to '+str(ct*args.bounding_box_batch_size)+' lines: '+str(t_batch_finished-t_last_batch))
+    
+    if ct>=10:
+     # print(len(rlt_all))
       for tp in rlt_all:
         print(tp)
       break
+      
+  t_all_done=time.time()
+  print('model prepare + str(2*args.bounding_box_batch_size) lines, each line includes 6 -15 words: '+str(t_all_done-t_start))
   
 
   
   
   
-  print('so far so good')
- 
+  #print('so far so good')
+  #elapsed = (time.clock() - start)
+  #print('Total Time: ',elapsed)
 
 '''
 	# read input images from 'in' directory
