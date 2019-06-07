@@ -163,6 +163,7 @@ def wordSegmentation(args,img, kernelSize=25, sigma=11, theta=7, minArea=0): #yi
 
 	# append components to result
 	res = []
+	hh,ww=img.shape
 	for c in components:
 		# skip small word candidates
 		if cv2.contourArea(c) < minArea:
@@ -170,7 +171,7 @@ def wordSegmentation(args,img, kernelSize=25, sigma=11, theta=7, minArea=0): #yi
 		# append bounding box and image of word to result list
 		currBox = cv2.boundingRect(c) # returns (x, y, w, h)
 		(x, y, w, h) = currBox
-		currImg = cv2.transpose(cv2.resize(img[y:y+h, x:x+w], (args.imgsize[0],args.imgsize[1]), interpolation=cv2.INTER_CUBIC))#img[y:y+h, x:x+w] # revised a little, revise to argsize and transpose, yike
+		currImg = cv2.transpose(cv2.resize(img[int(max(y-0.05*h,0)):int(min(y+1.05*h,hh)), x:x+w], (args.imgsize[0],args.imgsize[1]), interpolation=cv2.INTER_CUBIC))#img[y:y+h, x:x+w] # revised a little, revise to argsize and transpose, yike 
 		res.append((currBox, currImg))
 
 	# return list of words, sorted by x-coordinate
